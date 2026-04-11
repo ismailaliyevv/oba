@@ -1542,16 +1542,13 @@
       let imageUrl = window._pendingImgUrl || '';
       const fileInput = document.getElementById('qImgFile');
       if (fileInput && fileInput.files && fileInput.files[0]) {
-        try {
-          toast('Şəkil yüklənir...','info');
-          const file = fileInput.files[0];
-          const path = `question_images/${qid}_${Date.now()}_${file.name.replace(/[^a-zA-Z0-9.]/g,'_')}`;
-          const storRef = window._fbStorageRef(window._fbStorage, path);
-          const snap = await window._fbUploadBytes(storRef, file);
-          imageUrl = await window._fbGetDownloadURL(snap.ref);
-        } catch(e) {
-          toast('Şəkil yükləmə xətası: '+e.message,'error'); return;
-        }
+        // Şəkili base64-ə çevir — birbaşa Database-ə saxla
+        imageUrl = await new Promise((resolve) => {
+          const reader = new FileReader();
+          reader.onload = (e) => resolve(e.target.result);
+          reader.onerror = () => resolve('');
+          reader.readAsDataURL(fileInput.files[0]);
+        });
       }
 
       const qObj = {question:text, options, correct};
