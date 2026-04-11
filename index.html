@@ -1542,12 +1542,29 @@
       let imageUrl = window._pendingImgUrl || '';
       const fileInput = document.getElementById('qImgFile');
       if (fileInput && fileInput.files && fileInput.files[0]) {
-        // Şəkili base64-ə çevir — birbaşa Database-ə saxla
+        // Şəkili resize edib base64-ə çevir (max 800px, keyfiyyət 0.7)
         imageUrl = await new Promise((resolve) => {
+          const file = fileInput.files[0];
           const reader = new FileReader();
-          reader.onload = (e) => resolve(e.target.result);
+          reader.onload = (e) => {
+            const img = new Image();
+            img.onload = () => {
+              const MAX = 800;
+              let w = img.width, h = img.height;
+              if (w > MAX || h > MAX) {
+                if (w > h) { h = Math.round(h * MAX / w); w = MAX; }
+                else       { w = Math.round(w * MAX / h); h = MAX; }
+              }
+              const canvas = document.createElement('canvas');
+              canvas.width = w; canvas.height = h;
+              canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+              resolve(canvas.toDataURL('image/jpeg', 0.7));
+            };
+            img.onerror = () => resolve('');
+            img.src = e.target.result;
+          };
           reader.onerror = () => resolve('');
-          reader.readAsDataURL(fileInput.files[0]);
+          reader.readAsDataURL(file);
         });
       }
 
